@@ -1,0 +1,117 @@
+---
+title: "Bourdain in Data"
+author: "Phil Azar"
+date: "June 19, 2018"
+slug: "bourdain-in-data"
+categories: 
+- TV
+- Food
+- Bourdain
+description: "If I'm an advocate for anything, it's to move. As far as you can, as much as you can. Across the ocean, or simply across the river. Walk in someone else's shoes or at least eat their food. It's a plus for everybody. - A.B."
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(leaflet)
+library(ggflags)
+library(readr)
+library(magrittr)
+library(stringr)
+library(ggiraph)
+data <- readr::read_csv('/Users/acazar/Desktop/blog/projects/bourdain/bourdain-travel-places/bourdain_episodes_clean.csv')
+
+ny_latlong <- readr::read_csv('/Users/acazar/Desktop/blog/projects/bourdain/bourdain-travel-places/bourdain_nyc.csv')
+cc_lkp <- readr::read_csv('/Users/acazar/Desktop/blog/projects/bourdain/bourdain-travel-places/country_code_lkp.csv')
+pal <- colorFactor(c("#C50006", "#400080", "deepskyblue3"), 
+                   domain=c('No Reservations', 'The Layover','Parts Unknown'))
+
+```
+
+
+```{r world_map, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.width=8}
+leaflet(data=data) %>% 
+  setView(lng = -17.46769, lat = 14.71668, zoom = 1.4) %>% 
+  addProviderTiles(providers$CartoDB.Positron,
+                   options=providerTileOptions(noWrap = TRUE)) %>% 
+  addCircleMarkers(~long, ~lat, popup= ~tt ,label = ~tt, 
+                   radius = .5, color = ~pal(show), opacity = .5) %>% 
+  addLegend("bottomleft", pal = pal, values = ~show,
+            title = "",
+            opacity = .5)
+
+```
+
+There is an episode in Parts Unknown where Anthony and Sean Brock stumble into a Charleston Waffle House after a night of eating - and drinking - their way around the finest restaurants the South Carolina city has to offer. Sean, a Waffle House vet, mentors a newbie Bourdain through the laminated menu. Bourdain needs to find his Waffle House 'balance.' You order your hashbrowns style 'scattered covered smothered chunks', and always, always start with a pecan waffle drowned in syrup. Anthony looks at Sean and says, "I'm confused and enticed."
+
+That was the cool thing about Bourdain. In one episode, he would eat quail eggs and sip rose in Denmark. In the next, he's hammered at a Waffle House eating a butter plastered breakfast at 1 am. Huh, I guess you and I aren't so different after all, Tony? 
+
+
+> "The way you make an omelet reveals your character."
+
+
+Anthony Bourdain graduated from The Culinary Institute of America in 1978. Worked in a variety of roles at countless restaurants. Hosted 4 TV shows in 16 years. Filmed 486 episodes. Traveled to over 87 countries. Wrote 9 books.  And had 1 love for the movie [Roadhouse](https://www.youtube.com/watch?v=5W1YEK6WZ_E). 
+
+#### Bourdain: The Well Traveled Man 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+bourd_hist <- data %>% 
+  group_by(country_clean) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  inner_join(cc_lkp, by=c('country_clean'='country')) %>% 
+  dplyr::filter(count > 1) %>% 
+  ggplot(aes(x=reorder(country_clean, count), y=count, 
+             tooltip=paste0(country_clean, ": ", count, ' episodes'), 
+             data_id = paste0(country_clean, ": ", count, ' episodes'))) + 
+  geom_bar_interactive(stat='identity', alpha=.6) + 
+  ggflags::geom_flag(y=-3,size=4, aes(country=tolower(codes))) +
+  theme_minimal() +
+  theme(
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.line = element_line(),
+    axis.line.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.x = element_text(family = ""), 
+    panel.grid.major = element_blank()
+  ) +
+  coord_flip()
+ggiraph(code={print(bourd_hist)}, 
+        tooltip_extra_css = "background-color:transparent;font-weight:bold;", 
+        hover_css="fill:blue;")
+
+```
+
+###### Countries with only 2 or more episodes shown in graph.
+
+
+> "Without experimentation, a willingness to ask questions and try new things, we shall surely become static, repetitive, and moribund."
+
+
+Most of all Bourdain loved New York. He visited over 58 locations in the Big Apple and had dedicated episodes to the Bronx and Queens -  places you wouldn't find on a Brooklyner's instagram. It's the city where he was born in 1956 and got his culinary career start 22 years later. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+leaflet(data=ny_latlong) %>% 
+  addProviderTiles(providers$CartoDB.Positron,
+                   options=providerTileOptions(noWrap = TRUE)) %>% 
+  addCircleMarkers(~lon, ~lat, radius = .5, opacity = .5, color=~pal(show),
+                   label =~paste0(restaurant, " | ", address)) %>% 
+  addLegend("bottomleft", pal = pal, values = ~show,
+            title = "",
+            opacity = .5)
+
+```
+
+
+
+> "Its been an adventure. We took some casualities over the years. Things got broken. Things got lost. But I wouldn't have missed it for the world."
+
+
+
+Original data from [Christine Zhang](https://github.com/underthecurve). 
+
+Data and code found [here](https://github.com/filetczar)
